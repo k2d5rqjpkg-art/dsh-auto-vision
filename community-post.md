@@ -59,3 +59,6 @@ The vision model is priced the same as flash, so the switch is effectively cost-
 ## Feedback welcome!
 
 Happy to iterate on detection heuristics, the config surface, fallback behavior, or anything else. If the maintainers would prefer this as an upstream feature, I'd be glad to adjust the design (e.g. task-complexity upgrade matrix, context-window-aware switching) accordingly.
+
+---
+> ✅ 已发布: https://github.com/deepseek-ai/deepseek-harness/discussions/3956 (2026-08-22, Show Your Plugins!)
