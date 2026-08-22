@@ -25,16 +25,34 @@ DeepSeek accepts image input only on `deepseek-v4-flash-vision-exp`; the harness
 
 ## How it works
 
-Two waterfall listeners on the agent loop (official extension points, same pattern as `dsh-llm-retry`):
+Three on-demand triggers on the agent loop (official extension points, same pattern as `dsh-llm-retry`). Each rewrites `model` to the vision model; pure-text requests keep the original model, so KV-cache behavior is unchanged.
 
-- **`agent/request`** — after downstream resolution, scans the agent's durable session history **backwards** (first hit stops) and rewrites `model` to the vision model when history carries:
-  - image blocks (`user` / `assistant` / `tool/result`), or
-  - `read_image` tool calls (including refusals whose failure text names image input), or
-  - vision-intent user text (built-in vocabulary, e.g. "看下这张图"; configurable `intentPattern`).
-  Pure-text requests keep the original model, so KV-cache behavior is unchanged.
-- **`agent/request-error`** — on a fatal failure of the switched route (`AUTH` / `FORBIDDEN` / `NO_ADAPTER` / `SERVER` / `INVALID_REQUEST`) it retreats **once** to the original model, so a session recovers instead of looping on a dead route.
+- **`agent/request` — user-message pre-emption (v0.3)**: when a user message arrives, predict ahead of any tool call whether the task will need vision. It switches immediately when the message carries:
+  - a link (`mp.weixin.qq.com` / `http(s)://` / `www.`) **plus** an analysis verb (分析/看看/识别/解读/检查/评估/总结/阅读/读/提取/解释), or
+  - an image-noun (图片/图像/截图/照片/画面/图表/示意图/架构图/海报/扫描件/OCR/二维码/热榜/封面), or
+  - a direct visual action (看图/识别图/提取图片/读图 etc.).
+  So handing the agent a WeChat / web link to analyze already lands on the vision route — no failed `read_image` first.
+- **`agent/request` — history look-back**: scans the agent's durable session events **backwards** (first hit stops) and switches when history carries image blocks, `read_image` tool calls (including refusals whose failure text names image input), or vision-intent user text.
+- **`agent/request-error` — fallback**: on a fatal failure of the switched route (`AUTH` / `FORBIDDEN` / `NO_ADAPTER` / `SERVER` / `INVALID_REQUEST`) it retreats **once** to the original model, so a session recovers instead of looping on a dead route.
 
 The vision model is priced the same as flash, so the switch is effectively cost-neutral. No durable session events are appended; the switch surfaces through the existing `request/header` change record.
+
+## Complete switching pipeline
+
+**A — user hands a link / image task (pre-emption path)**
+```
+user message (link + analysis verb, or image noun) → plugin switches route to vision
+→ agent calls read_image → succeeds immediately → picture enters context → task continues
+```
+
+**B — images discovered mid-task (self-healing path)**
+```
+task in progress on flash → agent searches/fetches and finds a picture that must be read
+→ agent calls read_image (first attempt, flash route) → tool/call + failure recorded in history
+→ plugin looks back, sees the read_image call → switches route to vision on the next request
+→ agent retries read_image → succeeds → picture enters context → task continues (uninterrupted)
+```
+
 
 ## Config (all optional)
 
