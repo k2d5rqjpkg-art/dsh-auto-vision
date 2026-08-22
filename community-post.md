@@ -70,9 +70,9 @@ task in progress on flash → agent searches/fetches and finds a picture that mu
 ## Status
 
 - 11 unit + real-Loader composition tests passing; `tsc -b tsconfig.host.json`, oxlint, and translation-pairing all clean.
-- Also prepared as an upstream-style package (`packages/llm/llm-auto-vision` + base-bundle registration + bilingual README + Agent Note) in my fork:
+- Source is live on the fork branch (pushed and accessible):
   **https://github.com/k2d5rqjpkg-art/deepseek-harness/tree/feat/llm-auto-vision**
-  (I couldn't open the PR from this account — the org's pulls endpoint 404s for me; happy to open it if a maintainer confirms a different route.)
+  prepared as an upstream-style package (`packages/llm/llm-auto-vision` + base-bundle registration + bilingual README + Agent Note). The PR is not open from this account (the org's pulls endpoint 404s for me); maintainers are welcome to take this branch.
 
 ## Feedback welcome!
 
