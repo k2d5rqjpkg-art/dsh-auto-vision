@@ -108,7 +108,25 @@ node test/verify.mjs    # 15 项用例：加载/各判据/边界/回退/多 prov
 2. 发一个含图片的公众号/网页链接 → 任务中自动读图
 3. 纯文本对话 → 日志无切换记录（保持 flash）
 
-## 六、边界与已知限制
+## 六、Token 效率优化
+
+插件切换本身零成本（vision 与 flash 同价），但**读图**会消耗 token。以下四层让 token 使用最优：
+
+| 层 | 手段 | 效果 |
+|---|---|---|
+| 1 | **读图前压缩**（`tools/compress_image.py`，也可从技能脚本用） | DeepSeek 按缩放后像素计费（每图上限 384 token）；DSH 序列化不传 `detail`，预压到 ≤768 单边显著降 token（如 2000×1500/218KB → 768×576/47KB） |
+| 2 | **只读关键图**（`--max-images` + 内容相关性） | 每图最多 ~384 token，别全读 |
+| 3 | **结论文字化** | 一张图只读一次，读后把关键信息写成文字；后续请求用文字、**不反复 read_image 原图**（历史图片块随每次请求重发） |
+| 4 | **依赖 compaction 清理历史图** | DSH 压缩要求**纯文本摘要**（`contentHasImage → throw`），含图历史被压成文字、图片块释放——`/compact` 或上下文满自动触发 |
+
+```bash
+# 读图前先压缩
+python tools/compress_image.py <图> --max-width 768 --quality 82
+```
+
+> 说明：第 3、4 层互补——结论文字化避免大图被反复引用；compaction 把历史里已读的图系统清理掉。
+
+## 七、边界与已知限制
 
 - 仅对 **DeepSeek 系路由**生效（默认 `deepseek-official`/`deepseek`）；其他 provider 不做切换
 - 目标模型需要账号有 vision 权限；无权限时插件自动回退原模型（见回退机制）
@@ -116,7 +134,7 @@ node test/verify.mjs    # 15 项用例：加载/各判据/边界/回退/多 prov
 - 图片只能出现在 user 消息（DeepSeek API 限制）；assistant/tool-result 中的图片块是 read_image 的产物
 - 插件切换的是**会话请求路由**；request/header 会记录切换（会话轨迹可见"模型变更"）
 
-## 七、不足修复记录（v0.1 → v0.2）
+## 八、不足修复记录（v0.1 → v0.2）
 
 | 不足（v0.1） | 修复（v0.2） |
 |---|---|
@@ -128,11 +146,11 @@ node test/verify.mjs    # 15 项用例：加载/各判据/边界/回退/多 prov
 | 未覆盖 Responses API 工具输出图片 | 支持 function_call_output/custom_tool_call_output |
 | 无正式测试 | `test/verify.mjs` 15 项用例 |
 
-## 八、与 DSH 官方图片管线的定位
+## 九、与 DSH 官方图片管线的定位
 
 官方（deepseek-ai/deepseek-harness，2026-08 活跃开发中）正在建设图片底层：PR #2676 image-management-strategy（统一图片请求管线、附件规范化）、PR #2726 deepseek-vision-model-catalog（视觉模型目录——vision-exp 入册即来自此）。**本插件是路由层的补充**：官方管线下层（read_image/附件/Files API），本插件管上层"何时用视觉模型"，两者正交、不冲突。
 
-## 九、卸载
+## 十、卸载
 
 ```powershell
 # 1) 删除 cordis.patch.yml 中的 auto-vision insert 段（或恢复备份 cordis.patch.yml.bak-*）
@@ -140,6 +158,6 @@ node test/verify.mjs    # 15 项用例：加载/各判据/边界/回退/多 prov
 # 3) 重启 DSH Desktop
 ```
 
-## 十、许可证
+## 十一、许可证
 
 MIT
