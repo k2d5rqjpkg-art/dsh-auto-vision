@@ -28,3 +28,9 @@ python tools/check-discussion-comments.py 3956 --token <token-file>
 2. **建议 / 设计取舍** → 整理成选项，交给用户拍板。
 3. **报错 / 兼容问题** → 定位 → 能改的改插件/配置 → 说明。
 4. **官方维护者跟进**（想收编上游）→ 确认 PR 渠道，调整设计（升级矩阵 / 上下文窗口 / 子 agent 路由）。
+
+## Plugin market listing
+
+- **Market PR**: https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/3164 (add k2d5rqjpkg-art/dsh-auto-vision, Vision)
+- **Plugin repo**: https://github.com/k2d5rqjpkg-art/dsh-auto-vision (installable via dsh plugin add)
+- **Repo age**: created 2026-08-22; maintainers may require >=1 day + >=10 commits (we have 11).
