@@ -1,0 +1,4 @@
+# auto-vision plugin bundle patch: registers the plugin into a DSH profile.
+- insert:
+    - id: auto-vision
+      name: dsh-auto-vision
